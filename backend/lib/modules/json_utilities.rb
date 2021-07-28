@@ -1,11 +1,16 @@
 require 'json'
-require 'date'
 
 module JsonUtilities
   module_function
 
   def load_json(location)
-    data = File.read(location)
+    begin
+      data = File.read(location)
+    rescue Errno::ENOENT => e
+      LogUtilities::log(__FILE__, e.message)
+      #terminate app
+      exit -1
+    end
     JSON.parse(data)
   end
 

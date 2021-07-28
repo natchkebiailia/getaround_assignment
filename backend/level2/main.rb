@@ -1,31 +1,26 @@
-require './utils/json_helper.rb'
-require './models/local_storage.rb'
-require './models/car.rb'
-require './models/rental.rb'
+require '../lib/rental_service.rb'
+require './config.rb'
 
-#read json
-input_data = get_data('./data/input.json')
+#load data from json
+input_data = JsonUtilities::load_json(INPUT_FILE_PATH)
 
-#make global instance
-local_storage = LocalStorage.new
-#put instances in global instance
-local_storage.store_cars(input_data['cars'])
-local_storage.store_rentals(input_data['rentals'])
+#create instances from data
+rentals = Rentals.new.from_array(input_data['rentals'])
+cars = Cars.new.from_array(input_data['cars'])
 
-#prepare output
-output_data = { 'rentals' => [] }
-local_storage.get_all_rentals.each do |rental|
-  output_data['rentals'] << { 'id' => rental.get_id,
-                              'price' => rental.calculate_discounted_price()
-  }
-end
+rentals.populate_cars(cars)
 
-#save file
-save_data(output_data, './data/output.json')
+#do all calculation
+rentals.calculate
+
+#create formatted json from result
+JsonUtilities::save_data_to_json(rentals.custom_format(['price']), OUTPUT_FILE_PATH)
 
 #check if result is correct
-# TODO : remove
-expected_output = get_data('./data/expected_output.json')
-unless expected_output == output_data
+# TODO : remove from here
+expected_output = JsonUtilities::load_json(EXPECTED_OUTPUT_FILE_PATH)
+output_data = JsonUtilities::load_json(OUTPUT_FILE_PATH)
+
+unless JsonUtilities::compare_json(expected_output, output_data)
   raise "jsons mismatch"
 end
